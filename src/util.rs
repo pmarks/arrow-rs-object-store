@@ -16,6 +16,7 @@
 // under the License.
 
 //! Common logic for interacting with remote object stores
+use std::time::Duration;
 use std::{
     fmt::Display,
     ops::{Range, RangeBounds},
@@ -324,6 +325,23 @@ pub(crate) fn hex_encode(bytes: &[u8]) -> String {
     out
 }
 
+/// Sleep only if non-zero duration
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn sleep(duration: Duration) {
+    if !duration.is_zero() {
+        tokio::time::sleep(duration).await
+    }
+}
+
+/// Sleep only if non-zero duration
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn sleep(duration: Duration) {
+    use send_wrapper::SendWrapper;
+    if !duration.is_zero() {
+        SendWrapper::new(gloo_timers::future::sleep(duration)).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Error;
@@ -331,6 +349,12 @@ mod tests {
     use super::*;
     use rand::{RngExt, rng};
     use std::ops::Range;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    use tokio::test as async_test;
+
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test as async_test;
 
     /// Calls coalesce_ranges and validates the returned data is correct
     ///
@@ -363,7 +387,7 @@ mod tests {
         fetches
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_coalesce_ranges() {
         let fetches = do_fetch(vec![], 0).await;
         assert!(fetches.is_empty());
@@ -393,7 +417,7 @@ mod tests {
         assert_eq!(fetches, vec![0..1, 6..14]);
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_coalesce_fuzz() {
         let mut rand = rng();
         for _ in 0..100 {

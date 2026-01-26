@@ -66,6 +66,9 @@ serde_urlencoded = { version = "0.7", optional = true }
 # Optional tokio feature
 tokio = { version = "1.29.0", features = ["sync", "macros", "rt", "time", "io-util"], optional = true }
 tracing = { version = "0.1", optional = true }
+# Browser-compatible JoinSet for multipart upload; re-exports tokio's on native.
+# Gated with the `tokio` feature, which is what gates the code that uses it.
+n0-future = { version = "0.3.2", optional = true }
 
 [target.'cfg(target_family="unix")'.dependencies]
 nix = { version = "0.31.1", default-features = false, optional = true }
@@ -80,6 +83,9 @@ nix = { version = "0.31.1", features = ["fs"] }
 web-time = { version = "1.1.0" }
 wasm-bindgen-futures = "0.4.18"
 futures-channel = {version = "0.3", features = ["sink"]}
+send_wrapper = { version = "0.6", features = ["futures"] }
+gloo-timers = { version = "0.3", features = ["futures"] }
+chrono = { version = "0.4.34", default-features = false, features = ["clock", "wasmbind"] }
 
 [features]
 default = ["fs"]
@@ -116,7 +122,7 @@ http = ["http-base", "reqwest", "reqwest/rustls", "aws-lc-rs"]
 
 fs = ["walkdir", "tokio", "nix", "windows-sys"]
 integration = ["rand", "tokio"]
-tokio = ["dep:tokio", "dep:tracing"]
+tokio = ["dep:tokio", "dep:tracing", "dep:n0-future"]
 
 [dev-dependencies] # In alphabetical order
 futures-executor = "0.3"
@@ -128,8 +134,9 @@ regex = "1.11.1"
 webpki-root-certs = "1"
 # The "gzip" feature for reqwest is enabled for an integration test.
 reqwest = { version = "0.13", default-features = false, features = ["gzip"] }
+web-time = "1.1"
 
-[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.50"
 
 [dev-dependencies.getrandom_v04]

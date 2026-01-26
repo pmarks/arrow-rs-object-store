@@ -2247,6 +2247,7 @@ pub enum Error {
         source: path::Error,
     },
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Error when `tokio::spawn` failed
     #[cfg(feature = "tokio")]
     #[error("Error joining spawned task: {}", source)]
@@ -2254,6 +2255,15 @@ pub enum Error {
         /// The wrapped error
         #[from]
         source: tokio::task::JoinError,
+    },
+
+    #[cfg(target_arch = "wasm32")]
+    /// Error when `tokio::spawn` failed
+    #[error("Error joining spawned task: {}", source)]
+    JoinError {
+        /// The wrapped error
+        #[from]
+        source: n0_future::task::JoinError,
     },
 
     /// Error when the attempted operation is not supported

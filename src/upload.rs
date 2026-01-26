@@ -24,7 +24,7 @@ use crate::{PutPayload, PutResult, Result};
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 #[cfg(feature = "tokio")]
-use tokio::task::JoinSet;
+use n0_future::task::JoinSet;
 
 /// An upload part request
 pub type UploadPart = BoxFuture<'static, Result<()>>;
@@ -259,7 +259,13 @@ mod tests {
 
     use super::*;
 
-    #[tokio::test]
+    #[cfg(not(target_arch = "wasm32"))]
+    use tokio::test as async_test;
+
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test as async_test;
+
+    #[async_test]
     async fn test_concurrency() {
         let config = ThrottleConfig {
             wait_put_per_call: Duration::from_millis(1),
@@ -303,7 +309,7 @@ mod tests {
         }
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_write_multipart() {
         let mut rng = StdRng::seed_from_u64(42);
 
