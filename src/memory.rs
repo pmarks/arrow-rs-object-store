@@ -560,11 +560,17 @@ impl MultipartUpload for InMemoryUpload {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(not(target_arch = "wasm32"))]
+    use tokio::test as async_test;
+
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test as async_test;
+
     use crate::{ObjectStoreExt, integration::*};
 
     use super::*;
 
-    #[tokio::test]
+    #[async_test]
     async fn in_memory_test() {
         let integration = InMemory::new();
 
@@ -583,7 +589,7 @@ mod tests {
         multipart_put_part_out_of_order(&integration, &integration).await;
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn box_test() {
         let integration: Box<dyn ObjectStore> = Box::new(InMemory::new());
 
@@ -597,7 +603,7 @@ mod tests {
         stream_get(&integration).await;
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn arc_test() {
         let integration: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
 
@@ -611,7 +617,7 @@ mod tests {
         stream_get(&integration).await;
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn unknown_length() {
         let integration = InMemory::new();
 
@@ -636,7 +642,7 @@ mod tests {
 
     const NON_EXISTENT_NAME: &str = "nonexistentname";
 
-    #[tokio::test]
+    #[async_test]
     async fn nonexistent_location() {
         let integration = InMemory::new();
 
