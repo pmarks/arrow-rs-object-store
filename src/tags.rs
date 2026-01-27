@@ -51,6 +51,7 @@ impl TagSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_macros::test;
 
     #[test]
     fn test_tag_set() {

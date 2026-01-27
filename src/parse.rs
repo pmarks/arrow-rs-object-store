@@ -240,6 +240,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_macros::test;
     use url::Url;
 
     #[test]
@@ -423,6 +424,7 @@ mod tests {
         }
     }
 
+    #[cfg(all(feature = "fs", not(target_arch = "wasm32")))]
     #[test]
     fn test_url_spaces() {
         let url = Url::parse("file:///my file with spaces").unwrap();
