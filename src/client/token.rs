@@ -106,6 +106,7 @@ impl<T: Clone + Send + Sync> TokenCache<T> {
 #[cfg(test)]
 mod test {
     use crate::client::token::{TemporaryToken, TokenCache};
+    use crate::test_macros::async_test;
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::time::{Duration, Instant};
 
@@ -117,7 +118,7 @@ mod test {
         }
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_expired_token_is_refreshed() {
         let cache = TokenCache::default();
         static COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -138,7 +139,7 @@ mod test {
         assert_eq!(COUNTER.load(Ordering::SeqCst), 2);
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_min_ttl_causes_refresh() {
         let cache = TokenCache {
             cache: Default::default(),

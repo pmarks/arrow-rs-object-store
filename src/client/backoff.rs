@@ -114,6 +114,7 @@ mod tests {
     use rand::{TryRng, rand_core::utils::fill_bytes_via_next_word};
 
     use super::*;
+    use crate::test_macros::test;
 
     struct FixedRng(u64);
 
