@@ -153,6 +153,37 @@ pub trait HttpService: std::fmt::Debug + Send + Sync + 'static {
     async fn call(&self, req: HttpRequest) -> Result<HttpResponse, HttpError>;
 }
 
+/// The [cache mode] a browser fetches a request with, set as a request
+/// extension by an [`HttpService`] that wraps the reqwest one:
+///
+/// ```ignore
+/// request.extensions_mut().insert(FetchCache::NoStore);
+/// ```
+///
+/// Only the browser (`wasm32-unknown-unknown`) backend reads it. Without it,
+/// a request is fetched in the browser's default mode. The reason to set one:
+/// a browser lets one request per URL at a time through its HTTP cache's
+/// headers phase, so concurrent range reads of one object are sent one round
+/// trip apart, unless they bypass the cache with `NoStore`.
+///
+/// [cache mode]: https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FetchCache {
+    /// `default`
+    Default,
+    /// `no-store`: the request neither reads nor writes the HTTP cache.
+    NoStore,
+    /// `reload`
+    Reload,
+    /// `no-cache`
+    NoCache,
+    /// `force-cache`
+    ForceCache,
+    /// `only-if-cached`
+    OnlyIfCached,
+}
+
 /// An HTTP client
 #[derive(Debug, Clone)]
 pub struct HttpClient(Arc<dyn HttpService>);
@@ -249,6 +280,19 @@ impl HttpService for reqwest::Client {
         let mut req = reqwest::Request::new(parts.method, url);
         *req.headers_mut() = parts.headers;
         *req.body_mut() = Some(body.into_reqwest());
+        if let Some(mode) = parts.extensions.get::<FetchCache>() {
+            let builder = reqwest::RequestBuilder::from_parts(self.clone(), req);
+            req = match mode {
+                FetchCache::Default => builder.fetch_cache_default(),
+                FetchCache::NoStore => builder.fetch_cache_no_store(),
+                FetchCache::Reload => builder.fetch_cache_reload(),
+                FetchCache::NoCache => builder.fetch_cache_no_cache(),
+                FetchCache::ForceCache => builder.fetch_cache_force_cache(),
+                FetchCache::OnlyIfCached => builder.fetch_cache_only_if_cached(),
+            }
+            .build()
+            .map_err(HttpError::reqwest)?;
+        }
 
         let (mut tx, rx) = mpsc::channel(1);
         let (tx_parts, rx_parts) = oneshot::channel();
